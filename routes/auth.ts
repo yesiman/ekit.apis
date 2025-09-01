@@ -17,7 +17,6 @@ export const auth = {
                 const token = jwt.sign({"credentials":user.credentials}, process.env.JWT as string, {
                     expiresIn: 14400 
                 });
-                console.log("token created",token);
                 ret = {
                     user:user, 
                     token:token

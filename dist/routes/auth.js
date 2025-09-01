@@ -31,7 +31,6 @@ exports.auth = {
                 const token = jsonwebtoken_1.default.sign({ "credentials": user.credentials }, process.env.JWT, {
                     expiresIn: 14400
                 });
-                console.log("token created", token);
                 ret = {
                     user: user,
                     token: token

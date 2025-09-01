@@ -23,62 +23,73 @@ export const mongo = {
     projects: {
         collection: mongoDB.collection('projects'),
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async ([]) => {
-            return await mongo.projects.collection.find({}).toArray();;
+        getAll: async (ids:[]) => {
+            //On TRANSFORME LES id en string en ObjectID
+            const networksIds = ids.map((item:string) => 
+                new ObjectId(item));
+
+            var aggParams = [];
+            aggParams.push({$lookup: {
+                from: "objects_langs",
+                localField: "_id",    // field in the orders collection
+                foreignField: "objectid",
+                as: "body",
+            }});
+            aggParams.push({ "$unwind": "$body" });
+            aggParams.push({ "$match": 
+            {
+                _id:{$in:networksIds},
+                "body.lang":"fr"
+            } 
+            });     
+            return mongo.projects.collection.aggregate(aggParams).toArray();
         }
     },
-    metas: {
-        add:async (metas:any) => {
-            const metasCol = mongoDB.collection('metas');
-            metas.dateCreation = new Date();
-            return await metasCol.insertOne(metas)
-        },
-        update:async (uid:string,metas:any) => {
-            const metasCol = mongoDB.collection('metas');
-            let updated = await metasCol.updateOne({_id:new ObjectId(uid)},{$set:metas})
-        },
-        load: async (req: Request, res: Response) => {
-            const metasCol = mongoDB.collection('metas');
-            let items = await metasCol
-                .find({ownerUID:req.body.ownerUID})
-                .collation({'locale':'en'})
-                .sort({original_fname:1})
-                .project({original_fname:1,path:1,fname:1,source_type:1,category:1,uid:1})
-                .toArray();
-            res.json({ret:items});
-        },
-        get:async (req: Request, res: Response) => {
-            const metasCol = mongoDB.collection('metas');
-            let ret = await metasCol.findOne({_id:new ObjectId(req.body.metaUID)});
-            res.json({ret:ret});
-        },
-        getChunksUids:async (metaUids:any[]) => {
-            const metasCol = mongoDB.collection('metas');
-            console.log(metaUids);
-            let ret = await metasCol.find({_id:{$in:metaUids}}).toArray();;
-            return ret;
-        },
-        getFromfname:async (req: Request, res: Response) => {
-            const metasCol = mongoDB.collection('metas');
-            let ret = await metasCol.findOne({fname:req.body.fname});
-            res.json({ret:ret});
-        },
-        delete:async (req: Request, res: Response) => {
-            const metasCol = mongoDB.collection('metas');
-            let ret = await metasCol.deleteMany({_id:new ObjectId(req.body.metaUID)});
-            res.json({ret:ret});
-        },
+    tables: {
+        collection: mongoDB.collection('prototypes'),
+        // LOAD DES PROJETS DEMANDES (UIDs)
+        getAll: async (ids:[]) => {
+            //On TRANSFORME LES id en string en ObjectID
+            //const networksIds = ids.map((item:string) => 
+            //    new ObjectId(item));
+
+            var aggParams = [];
+            aggParams.push({$lookup: {
+                from: "objects_langs",
+                localField: "_id",    // field in the orders collection
+                foreignField: "objectid",
+                as: "body",
+            }});
+            aggParams.push({ "$unwind": "$body" });
+            aggParams.push({ "$match": 
+            {
+                "body.lang":"fr"
+            } 
+            });     
+            
+            return mongo.tables.collection.aggregate(aggParams).toArray();
+        }
     },
-    categs: {
-        load: async (req: Request, res: Response) => {
-            const categsCol = mongoDB.collection('categs');
-            let items = await categsCol.find({ownerUID:req.body.ownerUID}).toArray();
-            res.json({ret:items});
-        },
-        add: async (req: Request, res: Response) => {
-            const categsCol = mongoDB.collection('categs');
-            let added = await categsCol.insertOne(req.body)
-            res.json(added);
-        },
+    properties: {
+        collection: mongoDB.collection('properties'),
+        // LOAD DES PROJETS DEMANDES (UIDs)
+        getAll: async (tableUID:string) => {
+            var aggParams = [];
+            aggParams.push({$lookup: {
+                from: "objects_langs",
+                localField: "_id",    // field in the orders collection
+                foreignField: "objectid",
+                as: "body",
+            }});
+            aggParams.push({ "$unwind": "$body" });
+            aggParams.push({ "$match": 
+            {
+                _id:new ObjectId(tableUID),
+                "body.lang":"fr"
+            } 
+            });     
+            return mongo.properties.collection.aggregate(aggParams).toArray();
+        }
     },
+    
 }
