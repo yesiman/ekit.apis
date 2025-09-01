@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auth = void 0;
-const mongo_1 = require("./db/mongo");
+const mongo_1 = require("../modules/db/mongo");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 // CUSTOM AUTH MANAGEMENT
 exports.auth = {
@@ -31,6 +31,7 @@ exports.auth = {
                 const token = jsonwebtoken_1.default.sign({ "credentials": user.credentials }, process.env.JWT, {
                     expiresIn: 14400
                 });
+                console.log("token created", token);
                 ret = {
                     user: user,
                     token: token

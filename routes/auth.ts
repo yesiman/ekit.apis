@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { mongo } from "./db/mongo";
+import { mongo } from "../modules/db/mongo";
 import jwt from "jsonwebtoken";
 
 // CUSTOM AUTH MANAGEMENT
@@ -9,8 +9,6 @@ export const auth = {
         log:async (req: Request, res: Response) => {
             // RECUPERATION USER LIE
             const user = await mongo.users.getOne({ "credentials.login": req.body.login, "credentials.pass": req.body.pass});
-            console.log(user);
-            
             let ret = null;
             // CHECK IF CREDENTIAL OK
             if (user?.credentials?.valid) {
@@ -19,11 +17,11 @@ export const auth = {
                 const token = jwt.sign({"credentials":user.credentials}, process.env.JWT as string, {
                     expiresIn: 14400 
                 });
+                console.log("token created",token);
                 ret = {
                     user:user, 
                     token:token
                 };
-                console.log("okuser",ret);
             }
             res.json(ret);
         }

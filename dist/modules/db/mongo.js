@@ -33,12 +33,10 @@ exports.mongo = {
     },
     projects: {
         collection: mongoDB.collection('projects'),
-        getAll: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-            //console.log(await mongo.users.collection.find({}).toArray())
-            let ret = yield exports.mongo.projects.collection.find({}).toArray();
+        // LOAD DES PROJETS DEMANDES (UIDs)
+        getAll: (_a) => __awaiter(void 0, [_a], void 0, function* ([]) {
+            return yield exports.mongo.projects.collection.find({}).toArray();
             ;
-            console.log(ret);
-            res.send({ result: ret });
         })
     },
     metas: {

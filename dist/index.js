@@ -11,8 +11,9 @@ const multer_1 = __importDefault(require("multer"));
 //CHARGEMENT CONFIG
 dotenv_1.default.config();
 //CUSTOM ROUTES
-const middle_1 = require("./modules/middle");
-const auth_1 = require("./modules/auth");
+const middle_1 = require("./routes/middle");
+const auth_1 = require("./routes/auth");
+const ekit_1 = require("./routes/ekit");
 //import { elastic } from './modules/db/elastic';
 //MULTER
 //DEFINITION STORAGE LOCATION 
@@ -51,7 +52,7 @@ app.post('/auth/custom/login', urlencodedParser, auth_1.auth.custom.log);
 // MIDDLE TOKEN VERIFICATION
 app.use(middle_1.middle.checkTokenValidity);
 // GET ALL PROJECTS
-app.post('/projects/get', urlencodedParser, auth_1.auth.custom.log);
+app.post('/projects/get', urlencodedParser, ekit_1.ekit.projects.getAll);
 // START SERVER
 http.listen(port, () => {
     console.log(`⚡️ ` + new Date() + `: [server]: Server is running at http://localhost:${port}`);

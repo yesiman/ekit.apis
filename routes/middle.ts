@@ -5,11 +5,11 @@ export const middle = {
     checkTokenValidity:async (req: Request, res: Response, next:NextFunction) => {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];  // Bearer <token>
+        // IF TOKEN CHECK IF CORRECT
         if (token)
         {
-            console.log("token",token);
             try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+                const decoded = jwt.verify(token, process.env.JWT as string);
                 next();
             } catch (error) {
                 return res.status(403).json({ 

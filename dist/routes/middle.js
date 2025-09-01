@@ -16,13 +16,12 @@ exports.middle = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 exports.middle = {
     checkTokenValidity: (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log("checkTokenValidity", req.headers);
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+        // IF TOKEN CHECK IF CORRECT
         if (token) {
-            console.log("token", token);
             try {
-                const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+                const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT);
                 next();
             }
             catch (error) {

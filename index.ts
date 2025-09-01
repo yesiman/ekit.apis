@@ -6,9 +6,10 @@ import multer from 'multer';
 //CHARGEMENT CONFIG
 dotenv.config();
 //CUSTOM ROUTES
-import { middle } from './modules/middle';
+import { middle } from './routes/middle';
 import { mongo } from './modules/db/mongo';
-import { auth } from './modules/auth';
+import { auth } from './routes/auth';
+import { ekit } from './routes/ekit';
 //import { elastic } from './modules/db/elastic';
 //MULTER
 //DEFINITION STORAGE LOCATION 
@@ -48,7 +49,7 @@ app.post('/auth/custom/login', urlencodedParser, auth.custom.log);
 // MIDDLE TOKEN VERIFICATION
 app.use(middle.checkTokenValidity);
 // GET ALL PROJECTS
-app.post('/projects/get', urlencodedParser, auth.custom.log);
+app.post('/projects/get', urlencodedParser, ekit.projects.getAll);
 // START SERVER
 http.listen(port, () => {
   console.log(`⚡️ `+new Date()+`: [server]: Server is running at http://localhost:${port}`);

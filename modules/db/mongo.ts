@@ -22,12 +22,9 @@ export const mongo = {
     },
     projects: {
         collection: mongoDB.collection('projects'),
-        getAll: async (req: Request, res: Response) => {
-            
-            //console.log(await mongo.users.collection.find({}).toArray())
-            let ret = await mongo.projects.collection.find({}).toArray();;
-            console.log(ret);
-            res.send({result:ret});
+        // LOAD DES PROJETS DEMANDES (UIDs)
+        getAll: async ([]) => {
+            return await mongo.projects.collection.find({}).toArray();;
         }
     },
     metas: {
