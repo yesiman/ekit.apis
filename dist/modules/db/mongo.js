@@ -56,10 +56,7 @@ exports.mongo = {
     tables: {
         collection: mongoDB.collection('prototypes'),
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: (ids) => __awaiter(void 0, void 0, void 0, function* () {
-            //On TRANSFORME LES id en string en ObjectID
-            //const networksIds = ids.map((item:string) => 
-            //    new ObjectId(item));
+        getAll: (id) => __awaiter(void 0, void 0, void 0, function* () {
             var aggParams = [];
             aggParams.push({ $lookup: {
                     from: "objects_langs",
@@ -69,6 +66,7 @@ exports.mongo = {
                 } });
             aggParams.push({ "$unwind": "$body" });
             aggParams.push({ "$match": {
+                    projects: { $in: [new mongodb_1.ObjectId(id)] },
                     "body.lang": "fr"
                 }
             });
@@ -78,7 +76,7 @@ exports.mongo = {
     properties: {
         collection: mongoDB.collection('properties'),
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: (tableUID) => __awaiter(void 0, void 0, void 0, function* () {
+        getAll: (projectUID, tableUID) => __awaiter(void 0, void 0, void 0, function* () {
             var aggParams = [];
             aggParams.push({ $lookup: {
                     from: "objects_langs",
@@ -88,11 +86,32 @@ exports.mongo = {
                 } });
             aggParams.push({ "$unwind": "$body" });
             aggParams.push({ "$match": {
-                    _id: new mongodb_1.ObjectId(tableUID),
+                    _projprof: { $in: [projectUID + tableUID] },
                     "body.lang": "fr"
                 }
             });
             return exports.mongo.properties.collection.aggregate(aggParams).toArray();
+        })
+    },
+    objects: {
+        collection: mongoDB.collection('objects'),
+        // LOAD DES PROJETS DEMANDES (UIDs)
+        getAll: (projectUID, tableUID) => __awaiter(void 0, void 0, void 0, function* () {
+            var aggParams = [];
+            aggParams.push({ $lookup: {
+                    from: "objects_langs",
+                    localField: "_id", // field in the orders collection
+                    foreignField: "objectid",
+                    as: "body",
+                } });
+            aggParams.push({ "$unwind": "$body" });
+            aggParams.push({ "$match": {
+                    projects: { $in: [new mongodb_1.ObjectId(projectUID)] },
+                    proto: { $in: [new mongodb_1.ObjectId(tableUID)] },
+                    "body.lang": "fr"
+                }
+            });
+            return exports.mongo.objects.collection.aggregate(aggParams).toArray();
         })
     },
 };

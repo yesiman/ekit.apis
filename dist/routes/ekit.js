@@ -13,6 +13,44 @@ exports.ekit = void 0;
 const mongo_1 = require("../modules/db/mongo");
 // CUSTOM AUTH MANAGEMENT
 exports.ekit = {
+    datas: {
+        getAll: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+            console.log("req.body", req.body);
+            // LOAD PROJETS DE L'UTILISATEUR
+            if (req.body.projectUID && req.body.tableUID && req.body.coordinates) {
+                //LOAD PROPRIETES
+                if (req.body.coordinates === "X") {
+                    const properties = yield mongo_1.mongo.properties.getAll(req.body.projectUID, req.body.tableUID);
+                    res.json({ result: properties });
+                }
+                //LOAD OBJETS
+                else {
+                    //CORDINATE !== 
+                    console.log(req.body.coordinates);
+                    const datas = yield mongo_1.mongo.objects.getAll(req.body.projectUID, req.body.tableUID);
+                    res.json({ result: datas });
+                }
+            }
+            //LOAD USER PROJECTS
+            else if (req.body.projectsUIDs) {
+                const projects = yield mongo_1.mongo.projects.getAll(req.body.projectsUIDs);
+                const mapedProjects = projects.map(item => {
+                    var _a;
+                    return ({
+                        id: item._id.toString(),
+                        name: (_a = item.body) === null || _a === void 0 ? void 0 : _a.plib,
+                        dateCreation: item.dateCreation
+                    });
+                });
+                res.json({ result: mapedProjects });
+            }
+            //LOAD PROJECT
+            else if (req.body.projectUID) {
+                const tables = yield mongo_1.mongo.tables.getAll(req.body.projectUID);
+                res.json({ result: tables });
+            }
+        })
+    },
     projects: {
         // LOAD PROJETS
         getAll: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -32,17 +70,15 @@ exports.ekit = {
     properties: {
         // LOAD PROJETS
         getAll: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-            const props = yield mongo_1.mongo.properties.getAll(req.body.tableUID);
-            // .collection.aggregate(aggParams).toArray();
-            res.json({ result: props });
+            //const props = await mongo.properties.getAll(req.body.tableUID);
+            res.json({ result: [] });
         })
     },
     tables: {
         // LOAD PROJETS
         getAll: (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             console.log("getAllTables");
-            const tables = yield mongo_1.mongo.tables.getAll(req.body.tableUID);
-            console.log(tables);
+            const tables = yield mongo_1.mongo.tables.getAll(req.body.projectUID);
             res.json({ result: tables });
         })
     },

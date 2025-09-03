@@ -52,9 +52,7 @@ app.post('/auth/custom/login', urlencodedParser, auth_1.auth.custom.log);
 // MIDDLE TOKEN VERIFICATION
 app.use(middle_1.middle.checkTokenValidity);
 // GET ALL PROJECTS
-app.post('/projects/get', urlencodedParser, ekit_1.ekit.projects.getAll);
-app.post('/tables/get', urlencodedParser, ekit_1.ekit.tables.getAll);
-app.post('/properties/get', urlencodedParser, ekit_1.ekit.properties.getAll);
+app.post('/datas/get', urlencodedParser, ekit_1.ekit.datas.getAll);
 // START SERVER
 http.listen(port, () => {
     console.log(`⚡️ ` + new Date() + `: [server]: Server is running at http://localhost:${port}`);
