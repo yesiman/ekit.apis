@@ -6,6 +6,7 @@ import router from './routes/index'
 
 export function createApp() {
     const app = express();
+    // HEADER MIDDLE INJECTION
     app.use(helmet());
     const allowedOrigins = [
       'http://localhost:4200'
