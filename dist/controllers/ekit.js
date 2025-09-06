@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ekit = void 0;
-const mongo_1 = require("../modules/db/mongo");
+const mongo_1 = require("../services/mongo");
 // CUSTOM AUTH MANAGEMENT
 exports.ekit = {
     datas: {

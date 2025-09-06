@@ -8,20 +8,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var _a, _b;
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.mongo = void 0;
 const mongodb_1 = require("mongodb");
 const mongodb_2 = require("mongodb");
+const env_1 = require("../config/env");
 // MONGODB CONNECTION
 var mongoOptions = {};
 mongoOptions = {
     ssl: false,
     //useNewUrlParser: true
 };
-const mongoClient = new mongodb_2.MongoClient((_b = (_a = process === null || process === void 0 ? void 0 : process.env) === null || _a === void 0 ? void 0 : _a.MONGOHQ_URL) !== null && _b !== void 0 ? _b : "");
+const mongoClient = new mongodb_2.MongoClient((_a = env_1.env.MONGOHQ_URL) !== null && _a !== void 0 ? _a : "");
 // DATABASE DEFINITION
-const mongoDB = mongoClient.db(process.env.MONGOHQ_DB);
+const mongoDB = mongoClient.db(env_1.env.MONGOHQ_DB);
 //
 exports.mongo = {
     helper: {},

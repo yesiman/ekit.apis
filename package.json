@@ -1,12 +1,12 @@
 {
-  "name": "ekoal.srv.ekoalitos.ai",
+  "name": "ekit.apis",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/index.js",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\""
+    "start": "node dist/server.js",
+    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/server.js\""
   },
   "keywords": [],
   "author": "",
@@ -20,7 +20,6 @@
     "@langchain/mistralai": "^0.2.0",
     "@langchain/openai": "^0.4.4",
     "@socket.io/redis-adapter": "^8.3.0",
-    "@types/multer": "^1.4.12",
     "axios": "^1.9.0",
     "binance-api-node": "^0.12.9",
     "body-parser": "^1.20.2",
@@ -30,11 +29,13 @@
     "express": "^4.18.2",
     "follow-redirects": "^1.15.3",
     "google-auth-library": "^9.15.1",
+    "helmet": "^8.1.0",
     "hnswlib-node": "^3.0.0",
     "html-to-text": "^9.0.5",
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.15",
     "mongodb": "^6.8.0",
+    "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "node-tesseract-ocr": "^2.2.1",
     "node-ts-ocr": "^1.0.15",
@@ -56,6 +57,8 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.8.4",
     "@types/passport": "^1.0.17",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^1.4.12",
     "concurrently": "^8.2.1",
     "nodemon": "^3.0.1",
     "typescript": "^5.2.2"
