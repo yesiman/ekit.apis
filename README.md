@@ -1,1 +1,8 @@
-rest apis used by deepermind app
+rest apis used by ekit app
+
+MONGOHQ_URL=MONGO_HQ_URL
+MONGOHQ_DB=MONGO_DATABASE_NAME
+JWT=JWT_HASH
+PORT=SERVER_PORT
+
+npm install
