@@ -18,7 +18,10 @@ export const mongo = {
         collection: mongoDB.collection('users'),
         getOne:async (query:any) => {
             return await mongo.users.collection.findOne(query);
-        }
+        },
+        add:async (user:any) => {
+            return await mongo.users.collection.insertOne(user);
+        },
     },
     projects: {
         collection: mongoDB.collection('projects'),
