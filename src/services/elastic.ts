@@ -8,6 +8,7 @@ import { VectorStoreRetriever } from "@langchain/core/vectorstores";
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { Request, Response } from "express";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { env } from "../config/env";
 const esConfig: ClientOptions = {
     node: 'http://localhost:9200',
     requestTimeout: 60000, // Augmenté à 60 secondes
@@ -22,14 +23,14 @@ const esConfig: ClientOptions = {
     //  }
     //}
   };
-  if (process.env.ELASTIC_API_KEY) {
+  if (env.ELASTIC_API_KEY) {
     esConfig.auth = {
-      apiKey: process.env.ELASTIC_API_KEY,
+      apiKey: env.ELASTIC_API_KEY,
     }
   }
   esConfig.auth = {
-      username: process.env.ELASTIC_USER as string,
-      password: process.env.ELASTIC_PWD as string,
+      username: env.ELASTIC_USER as string,
+      password: env.ELASTIC_PWD as string,
     };
   
   
@@ -47,7 +48,7 @@ const esConfig: ClientOptions = {
     insertVector:async (content:string,metas:any,chunkuid:string) => {
         const esClientArgs: ElasticClientArgs = {
           client: new Client(esConfig),    
-          indexName: process.env.ELASTIC_INDEX+"_"+metas.ownerUID,
+          indexName: env.ELASTIC_INDEX+"_"+metas.ownerUID,
         };
         const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
         const ids = await esVectorStore.addDocuments([{
@@ -58,7 +59,7 @@ const esConfig: ClientOptions = {
     insertVectors:async (indexName:string,docs:any[],docsIds:any[]) => {
       const esClientArgs: ElasticClientArgs = {
         client: new Client(esConfig),    
-        indexName: process.env.ELASTIC_INDEX+"_"+indexName,
+        indexName: env.ELASTIC_INDEX+"_"+indexName,
       };
       const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
       const ids = await esVectorStore.addDocuments(docs,{ids:docsIds});
@@ -67,7 +68,7 @@ const esConfig: ClientOptions = {
     deleteVectors: async (req: Request, res: Response) => {
       const esClientArgs: ElasticClientArgs = {
         client: new Client(esConfig),    
-        indexName: process.env.ELASTIC_INDEX+"_"+ req.body.ownerUID,
+        indexName: env.ELASTIC_INDEX+"_"+ req.body.ownerUID,
       };
       const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
       const result = await esVectorStore.delete({ids:req.body.docsIds});
@@ -76,7 +77,7 @@ const esConfig: ClientOptions = {
     similaritySearch:async(question:string,k:number,filter:any,ownerUID:string) => {
       const esClientArgs: ElasticClientArgs = {
         client: new Client(esConfig),    
-        indexName: process.env.ELASTIC_INDEX+"_"+ownerUID,
+        indexName: env.ELASTIC_INDEX+"_"+ownerUID,
       };
       const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
       //return await esVectorStore.similaritySearch(question,k,filter)
@@ -149,7 +150,7 @@ const result = await chain.invoke({ context: esVectorStore.asRetriever({filter:f
     similaritySearchWithScore:async(question:string,k:number,filter:any,ownerUID:string) => {
       const esClientArgs: ElasticClientArgs = {
         client: new Client(esConfig),    
-        indexName: process.env.ELASTIC_INDEX+"_"+ownerUID,
+        indexName: env.ELASTIC_INDEX+"_"+ownerUID,
       };
       const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
       
@@ -159,11 +160,11 @@ const result = await chain.invoke({ context: esVectorStore.asRetriever({filter:f
     cleanDB: async (req: Request, res: Response) => {
       const esClientArgs: ElasticClientArgs = {
         client: new Client(esConfig),    
-        indexName: process.env.ELASTIC_INDEX+"_"+req.body.ownerUID,
+        indexName: env.ELASTIC_INDEX+"_"+req.body.ownerUID,
       };
       const esVectorStore = new ElasticVectorSearch(embeddings, esClientArgs);
         return await esClientArgs.client.indices.delete({
-          index: (process.env.ELASTIC_INDEX+"_"+req.body.ownerUID) as string,
+          index: (env.ELASTIC_INDEX+"_"+req.body.ownerUID) as string,
         });
       }
   }

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { mongo } from "../services/mongo";
 import jwt from "jsonwebtoken";
 import { JWT, OAuth2Client } from "google-auth-library";
+import { jsonWT } from "../services/jwt";
 
 // CUSTOM AUTH MANAGEMENT
 export const auth = {
@@ -15,15 +16,13 @@ export const auth = {
             if (user?.credentials?.valid) {
                 delete user.credentials.pass;
                 delete user.pres;
-                const token = jwt.sign({"credentials":user.credentials}, process.env.JWT as string, {
-                    expiresIn: 14400 
-                });
+                const token = jsonWT.sign({"credentials":user.credentials});
                 ret = {
                     user:user, 
                     token:token
                 };
             }
-            res.json(ret);
+            res.json({ret});
         }
     },
     google:{
@@ -53,14 +52,10 @@ export const auth = {
                 else  {
                     userBack= user;
                 }
-
-                let token = jwt.sign({"credentials":userBack.credentials}, process.env.JWT_SECRET as string, {
-                    expiresIn: 14400 
-                });
-                userBack.token = token;
+                const token = jsonWT.sign({"credentials":userBack.credentials});
                 //userBack.params = await mongo.getUserParamsNoRequest(userBack.email);
                 //userBack.profile = await mongo.getUserNoRequest(userBack.email);
-                res.json(userBack);
+                res.json({...userBack,token});
                 //res.json((realUserData as any).payload);
             } catch (error) {
                 console.log(error);
@@ -70,7 +65,7 @@ export const auth = {
         //DECODEAGE HASH ENVOYE PAR GOOGLE CONTENANT LES INFOS DE L'USER
         getDecodedOAuthJwtGoogle: async (token: string) => {
             try {
-                const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+                const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
             
                 const ticket = await client.verifyIdToken({
                     idToken: token
