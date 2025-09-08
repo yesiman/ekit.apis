@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { mongo } from "../services/mongo";
-import jwt from "jsonwebtoken";
-import { JWT, OAuth2Client } from "google-auth-library";
+import { OAuth2Client } from "google-auth-library";
 import { jsonWT } from "../services/jwt";
+import { env } from "../config/env";
 
 // CUSTOM AUTH MANAGEMENT
 export const auth = {
@@ -10,7 +10,9 @@ export const auth = {
         // LOGIN WITH PASS/LOGIN
         log:async (req: Request, res: Response) => {
             // RECUPERATION USER LIE
+            
             const user = await mongo.users.getOne({ "credentials.login": req.body.login, "credentials.pass": req.body.pass});
+            
             let ret = null;
             // CHECK IF CREDENTIAL OK
             if (user?.credentials?.valid) {
@@ -22,7 +24,7 @@ export const auth = {
                     token:token
                 };
             }
-            res.json({ret});
+            res.json(ret);
         }
     },
     google:{
@@ -55,7 +57,12 @@ export const auth = {
                 const token = jsonWT.sign({"credentials":userBack.credentials});
                 //userBack.params = await mongo.getUserParamsNoRequest(userBack.email);
                 //userBack.profile = await mongo.getUserNoRequest(userBack.email);
-                res.json({...userBack,token});
+                delete userBack.credentials.pass;
+                delete userBack.pres;
+                res.json({
+                    user:user, 
+                    token:token
+                });
                 //res.json((realUserData as any).payload);
             } catch (error) {
                 console.log(error);

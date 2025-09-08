@@ -16,7 +16,7 @@ export function createApp() {
     const corsOptions: cors.CorsOptions = {
       origin: allowedOrigins
     };
-    // CALLERS DOMAIN LIMITATION
+    // CALLERS DOMAIN ORIGINS LIMITATION
     app.use(cors(corsOptions));
     app.use(express.json());
     app.use(morgan('dev'));
