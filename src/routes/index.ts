@@ -55,5 +55,9 @@ router.use(middle.checkTokenValidity);
  *         description: Return data from the generic mongodb data
  */
 router.post('/datas/get', ekit.datas.getAll);
-
+//
+router.get('/projects/:uid', ekit.projects.get);
+router.post('/projects/', ekit.projects.save);
+router.put('/projects/:uid', ekit.projects.save);
+//
 export default router;

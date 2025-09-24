@@ -28,13 +28,14 @@ export const ekit = {
             }
             //LOAD USER PROJECTS
             else if (req.body.projectsUIDs) {
-                const projects = await mongo.projects.getAll(req.body.projectsUIDs);
+                const projects = await mongo.projects.getAll(req.decoded._id);
+                console.log(projects);
                 const mapedProjects = projects.map(item => ({
                     id: item._id.toString(),
+                    langs:item.langs,
                     name: item.body?.plib,
                     dateCreation: item.dateCreation
                 }));
-
                 res.json({ result:mapedProjects });
             }
             //LOAD PROJECT
@@ -42,6 +43,19 @@ export const ekit = {
                 const tables = await mongo.tables.getAll(req.body.projectUID);
                 res.json({ result:tables });
             }
+
         }
-    },    
+    },
+    projects: {
+        save:async (req: Request, res: Response) => {    
+            await mongo.projects.save(req.decoded._id,req.body);
+            res.json({ ok:true });
+            //mongo.projects.save();
+        },
+        get:async (req: Request, res: Response) => {    
+            const obj = await mongo.projects.get(req.params.uid);
+            res.json({ result:obj });
+            //mongo.projects.save();
+        }  
+    }
 }

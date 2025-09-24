@@ -11,7 +11,7 @@ export function createApp() {
     // HEADER SECURITY INJECTION
     app.use(helmet());
     const allowedOrigins = [
-      'http://localhost:4200'
+      'http://localhost:4200' 
     ];
     const corsOptions: cors.CorsOptions = {
       origin: allowedOrigins

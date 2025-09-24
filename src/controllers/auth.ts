@@ -18,7 +18,7 @@ export const auth = {
             if (user?.credentials?.valid) {
                 delete user.credentials.pass;
                 delete user.pres;
-                const token = jsonWT.sign({"credentials":user.credentials});
+                const token = jsonWT.sign({_id:user._id,"credentials":user.credentials});
                 ret = {
                     user:user, 
                     token:token
@@ -36,7 +36,8 @@ export const auth = {
                 //
                 let userBack:any;
                 //CHECK IF USER IN DB
-                const user = await mongo.users.getOne({ "credentials.login": (realUserData as any).payload.email});
+                let user = await mongo.users.getOne({ "credentials.login": (realUserData as any).payload.email});
+
                 if (!user) {
                     userBack = {
                         email: (realUserData as any).payload.email,
@@ -49,12 +50,18 @@ export const auth = {
                             login:(realUserData as any).payload.email
                         }
                     }
-                    await mongo.users.add(userBack);
+                    // NEW USER CREATION
+                    const result = await mongo.users.add(userBack);
+                    // GET RESULT UID FOR SIGNIN
+                    user = {
+                        _id:result.insertedId
+                    };
+                    //console.log("insertResult",insertResult);
                 }
                 else  {
                     userBack= user;
                 }
-                const token = jsonWT.sign({"credentials":userBack.credentials});
+                const token = jsonWT.sign({_id:user?._id,"credentials":userBack.credentials});
                 //userBack.params = await mongo.getUserParamsNoRequest(userBack.email);
                 //userBack.profile = await mongo.getUserNoRequest(userBack.email);
                 delete userBack.credentials.pass;

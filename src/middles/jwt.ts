@@ -11,6 +11,8 @@ export const middle = {
         {
             try {
                 const decoded = jwt.verify(token, env.JWT as string);
+                req.decoded = decoded;
+                
                 next();
             } catch (error) {
                 return res.status(403).json({ 

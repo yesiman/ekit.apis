@@ -10,5 +10,5 @@ export const env = {
     ELASTIC_API_KEY:process.env.ELASTIC_API_KEY ?? "XXXXXXXX",
     ELASTIC_INDEX:process.env.ELASTIC_INDEX ?? "index",
     ELASTIC_USER:process.env.ELASTIC_API_KEY ?? "ELASTIC_USER",
-    ELASTIC_PWD:process.env.ELASTIC_API_KEY ?? "ELASTIC_PWD"
+    ELASTIC_PWD:process.env.ELASTIC_PWD ?? "ELASTIC_PWD"
 }
