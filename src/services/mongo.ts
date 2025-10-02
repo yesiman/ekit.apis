@@ -15,7 +15,14 @@ export const mongo = {
     helper:{
     },
     generic: {
-        get:async (uid:string, collection:Collection) => {
+        add:async (objectLang:any, collection:Collection) => {
+            return await collection.insertOne(objectLang);
+        },
+        append:async (uid:string,objectLang:any, collection:Collection) => {
+            delete objectLang._id;
+            return await collection.updateOne({_id:new ObjectId(uid)},{$set:objectLang});
+        },
+        get:async (uid:string, collection:Collection, lang:string) => {
             var aggParams = [];
             aggParams.push({$lookup: {
                 from: "objects_langs",
@@ -27,7 +34,7 @@ export const mongo = {
             aggParams.push({ "$match": 
                 {
                     _id:new ObjectId(uid),
-                    "body.lang":"fr"
+                    "body.lang":lang
                 } 
             });     
             const ar = await collection.aggregate(aggParams).toArray();
@@ -36,15 +43,6 @@ export const mongo = {
     },
     objectsLangs:{
         collection: mongoDB.collection('objects_langs'),
-        add:async (objectLang:any) => {
-            return await mongo.objectsLangs.collection.insertOne(objectLang);
-        },
-        append:async (uid:string,objectLang:any) => {
-            console.log(uid,objectLang)
-            delete objectLang._id;
-            delete objectLang.objectid;
-            return await mongo.objectsLangs.collection.updateOne({_id:new ObjectId(uid)},{$set:objectLang});
-        },
     },
     users: {
         collection: mongoDB.collection('users'),
@@ -57,18 +55,7 @@ export const mongo = {
     },
     projects: {
         collection: mongoDB.collection('projects'),
-        add:async (project:any) => {
-            return await mongo.projects.collection.insertOne(project);
-        },
-        get:async (uid:string) => {
-            return await mongo.generic.get(uid,mongo.projects.collection);
-        },
-        append:async (uid:string,project:any) => {
-            
-            delete project._id
-            return await mongo.projects.collection.updateOne({_id:new ObjectId(uid)},{$set:project});
-        },
-        save: async (userId:string, project:any) => { 
+        save: async (userId:string, project:any, lang:string) => { 
             //LOADER LE PROJET
             
             //console.log("project saved",project);
@@ -77,28 +64,28 @@ export const mongo = {
             let projectUID:string = project._id;
             //SIL EXISTE PAS ALORS CREATION
             if (project._id == "-1") {
-                const q = await mongo.projects.add({
+                const q = await mongo.generic.add({
                     langs:project.langs,
                     dateModif:new Date(),
                     dateCreation:new Date(),
                     owner: new ObjectId(userId),
-                });
-                promises = Array.from(project.langs,(lang) => {
-                    return mongo.objectsLangs.add({
+                },mongo.projects.collection);
+                //promises = Array.from(project.langs,(lang) => {
+                    await mongo.generic.add({
                         lang:lang,
                         objectid: new ObjectId(q.insertedId),
                         plib: project.body.plib
-                    })
-                });
-                await Promise.all(promises).then((data) => {
-                    console.log("data",data);
-                })
+                    },mongo.objectsLangs.collection)
+                //});
+                //await Promise.all(promises).then((data) => {
+                //    console.log("data",data);
+                //})
             } else {
-                await mongo.projects.append(project._id,{
+                await mongo.generic.append(project._id,{
                     langs:project.langs,
                     dateModif:new Date(),
-                });
-                const r = await mongo.objectsLangs.append(project.body._id,project.body);
+                },mongo.projects.collection);
+                const r = await mongo.generic.append(project.body._id,project.body,mongo.objectsLangs.collection);
                 console.log("r",r);
             }
         
@@ -126,7 +113,7 @@ export const mongo = {
             return true;
         },
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (userId:string) => {
+        getAll: async (userId:string, lang:string) => {
             //On TRANSFORME LES id en string en ObjectID
             //const networksIds = ids.map((item:string) => 
             //    new ObjectId(item));
@@ -145,7 +132,7 @@ export const mongo = {
                     {owner:new ObjectId(userId)},
                     {collaborators:{$in:[userId]}}
                 ],
-                "body.lang":"fr"
+                "body.lang":lang
             } 
             });     
             return await mongo.projects.collection.aggregate(aggParams).toArray();
@@ -154,7 +141,7 @@ export const mongo = {
     tables: {
         collection: mongoDB.collection('prototypes'),
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (id:string) => {
+        getAll: async (id:string, lang:string) => {
             var aggParams = [];
             aggParams.push({$lookup: {
                 from: "objects_langs",
@@ -165,18 +152,46 @@ export const mongo = {
             aggParams.push({ "$unwind": "$body" });
             aggParams.push({ "$match": 
             {
-                projects:{$in:[new ObjectId(id)]},
-                "body.lang":"fr"
+                projects:{$in:[new ObjectId(id),id]},
+                "body.lang":lang
             } 
             });     
             
             return mongo.tables.collection.aggregate(aggParams).toArray();
+        },
+        save: async (userId:string, table:any, lang:string) => { 
+            if (table._id == "-1") {
+                const q = await mongo.generic.add({
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    projects:table.projects,
+                    public:true,
+                    categ: false,
+                    hierar: false,
+                    owner: new ObjectId(userId),
+                },mongo.tables.collection);
+                //
+                await mongo.generic.add({
+                        lang:lang,
+                        objectid: new ObjectId(q.insertedId),
+                        ...table.body
+                    },mongo.objectsLangs.collection);
+
+            } else {
+                await mongo.generic.append(table._id,{
+                    dateModif:new Date(),
+                },mongo.tables.collection);
+                const r = await mongo.generic.append(table.body._id,table.body,mongo.objectsLangs.collection);
+            }
+            return true;
         }
     },
     properties: {
         collection: mongoDB.collection('properties'),
-        // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (projectUID:string,tableUIDs:string[]) => {
+        /**
+         * LOAD DES PROPRIETES DEMANDES (UIDs/PROFIL/PROJET)
+         *  */ 
+        getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {
             var aggParams = [];
             aggParams.push({$lookup: {
                 from: "objects_langs",
@@ -191,19 +206,45 @@ export const mongo = {
             aggParams.push({ "$match": 
             {
                 _projprof:{$in:projProfs},
-                "body.lang":"fr"
+                "body.lang":lang
             } 
             });     
             return mongo.properties.collection.aggregate(aggParams).toArray();
+        },
+        /**
+         * 
+         * @param userId 
+         * @param field 
+         * @param lang 
+         * @returns 
+         */
+        save: async (userId:string, field:any, lang:string) => { 
+            if (field._id == "-1") {
+                const q = await mongo.generic.add({
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    _projprof:field._projprof,
+                    owner: new ObjectId(userId),
+                },mongo.properties.collection);
+                //
+                await mongo.generic.add({
+                        lang:lang,
+                        objectid: new ObjectId(q.insertedId),
+                        ...field.body
+                    },mongo.objectsLangs.collection);
+            } else {
+                await mongo.generic.append(field._id,{
+                    dateModif:new Date(),
+                },mongo.properties.collection);
+                const r = await mongo.generic.append(field.body._id,field.body,mongo.objectsLangs.collection);
+            }
+            return true;
         }
     },
     objects: {
         collection: mongoDB.collection('objects'),
-        add:async (object:any) => {
-            return await mongo.objects.collection.insertOne(object);
-        },
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (projectUID:string,tableUIDs:string[]) => {
+        getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {
 
             //aggParamsTest.push({ "$group": { _id : "$objectid" } });
             //aggParams.push({ $count: "counter" });
@@ -221,7 +262,7 @@ export const mongo = {
             {
                 projects:{$in:[new ObjectId(projectUID)]},
                 proto:{$in:tableUIDs.map(item => {return new ObjectId(item)})},
-                "body.lang":"fr"
+                "body.lang":lang
             } 
             });
             //aggParams.push({ "$group": { _id : "$proto", myCount: { $sum: 1 } } });
