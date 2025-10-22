@@ -44,6 +44,8 @@ router.post('/auth/custom/login', auth.custom.log);
 router.post('/auth/google',auth.google.log);
 // MIDDLE TOKEN VERIFICATION
 router.use(middle.checkTokenValidity);
+// MIDDLE USER RULE VERIFICATION (READ/WRITE...)
+router.use(middle.checkUserAccess);
 // GENERIC DATA METHOD
 /**
  * @openapi
@@ -56,9 +58,9 @@ router.use(middle.checkTokenValidity);
  */
 router.post('/datas/:lang', ekit.generic.getAll);
 //
-
 router.get('/:repo/:lang/:uid', ekit.generic.get);
 router.post('/:repo/:lang', ekit.generic.save);
 router.put('/:repo/:lang/:uid', ekit.generic.save);
+router.delete('/:repo/:lang/:uid', ekit.generic.delete);
 //
 export default router;

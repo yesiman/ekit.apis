@@ -18,8 +18,13 @@ export const mongo = {
         add:async (objectLang:any, collection:Collection) => {
             return await collection.insertOne(objectLang);
         },
+        delete:async (uid:string, collection:Collection) => {
+            const  a  = await mongo.objectsLangs.collection.deleteMany({objectid:new ObjectId(uid)})
+            const  b  = await collection.deleteOne({_id:new ObjectId(uid)});
+        },
         append:async (uid:string,objectLang:any, collection:Collection) => {
             delete objectLang._id;
+            delete objectLang.objectid;
             return await collection.updateOne({_id:new ObjectId(uid)},{$set:objectLang});
         },
         get:async (uid:string, collection:Collection, lang:string) => {
@@ -86,7 +91,6 @@ export const mongo = {
                     dateModif:new Date(),
                 },mongo.projects.collection);
                 const r = await mongo.generic.append(project.body._id,project.body,mongo.objectsLangs.collection);
-                console.log("r",r);
             }
         
 
@@ -135,7 +139,11 @@ export const mongo = {
                 "body.lang":lang
             } 
             });     
-            return await mongo.projects.collection.aggregate(aggParams).toArray();
+            const projects = await mongo.projects.collection.aggregate(aggParams).toArray();
+            return projects;
+        },
+        delete() {
+
         }
     },
     tables: {
@@ -161,6 +169,7 @@ export const mongo = {
         },
         save: async (userId:string, table:any, lang:string) => { 
             if (table._id == "-1") {
+                
                 const q = await mongo.generic.add({
                     dateModif:new Date(),
                     dateCreation:new Date(),
@@ -176,8 +185,9 @@ export const mongo = {
                         objectid: new ObjectId(q.insertedId),
                         ...table.body
                     },mongo.objectsLangs.collection);
-
+                    
             } else {
+                //console.log(table._id,table.body);
                 await mongo.generic.append(table._id,{
                     dateModif:new Date(),
                 },mongo.tables.collection);
@@ -188,6 +198,31 @@ export const mongo = {
     },
     properties: {
         collection: mongoDB.collection('properties'),
+        getTitleColumnsIds: async (projectUID:string,tableUIDs:string[], lang:string) => {
+            // get embed field to query
+            const keys = tableUIDs.map((item:string) => {
+                return "specifics."+projectUID + item+".isTitleCol";
+            });
+            // generate or clause
+            let orClauses:any =[];
+            keys.forEach(element => {
+                orClauses.push({ [element]:true })
+            });
+            const props:any[] = await mongo.properties.collection.find({
+                $or:orClauses
+            }).toArray();
+            let finalProps:any = {};
+            props.forEach((itemProp) => {
+                itemProp._projprof.forEach((itemProjProf:string) => {
+                    tableUIDs.forEach(itemTable => {
+                        if (itemProjProf==projectUID+itemTable) {
+                            finalProps[itemTable] = itemProp._id;
+                        }
+                    });
+                });
+            })
+            return finalProps;
+        },
         /**
          * LOAD DES PROPRIETES DEMANDES (UIDs/PROFIL/PROJET)
          *  */ 
@@ -233,22 +268,57 @@ export const mongo = {
                         ...field.body
                     },mongo.objectsLangs.collection);
             } else {
-                await mongo.generic.append(field._id,{
-                    dateModif:new Date(),
-                },mongo.properties.collection);
+                //
                 const r = await mongo.generic.append(field.body._id,field.body,mongo.objectsLangs.collection);
+                field.dateModif = new Date();
+                delete field.body;
+                await mongo.generic.append(field._id,field,mongo.properties.collection);
+                
             }
             return true;
         }
     },
     objects: {
         collection: mongoDB.collection('objects'),
+        delete: async (objectId:string) => { 
+            //remove from proto
+            await mongo.generic.delete(objectId,mongo.objects.collection);
+        },
+        save: async (userId:string, object:any, lang:string) => { 
+            if (object._id == "-1") {
+                const q = await mongo.generic.add({
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    projects:object.projects.map((item:string) => { return new ObjectId(item) }),
+                    proto:object.proto.map((item:string) => { return new ObjectId(item) }),
+                    owner: new ObjectId(userId),
+                },mongo.objects.collection);
+                //
+                await mongo.generic.add({
+                        lang:lang,
+                        objectid: new ObjectId(q.insertedId),
+                        ...object.body
+                    },mongo.objectsLangs.collection);
+
+                return q.insertedId;
+
+            } else {                
+                await mongo.generic.append(object._id,{
+                    dateModif:new Date(),
+                },mongo.objects.collection);
+                delete object.body.objectid;
+                const r = await mongo.generic.append(object.body._id,object.body,mongo.objectsLangs.collection);
+                return object._id;
+            }
+
+            
+        },
         // LOAD DES PROJETS DEMANDES (UIDs)
         getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {
 
             //aggParamsTest.push({ "$group": { _id : "$objectid" } });
             //aggParams.push({ $count: "counter" });
-
+            
 
             let aggParamsBase = [];
             aggParamsBase.push({$lookup: {
@@ -274,7 +344,7 @@ export const mongo = {
             let aggParamsCount=[...aggParamsBase,{ "$count": "counter" }];
 
             
-            console.log(await mongo.objects.collection.aggregate(aggParamsCount).toArray());
+            console.log("Line counter total",await mongo.objects.collection.aggregate(aggParamsCount).toArray());
 
             //console.log("aggParamsQuery", aggParamsQuery);
             //console.log("aggParamsCount", aggParamsCount);

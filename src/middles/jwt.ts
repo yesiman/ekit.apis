@@ -29,6 +29,9 @@ export const middle = {
                 message: 'Bad token or expired.' 
             });
         }
+    },
+    checkUserAccess:async (req: Request, res: Response, next:NextFunction) => {
+        next();
     }
 }
 

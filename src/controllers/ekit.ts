@@ -10,10 +10,6 @@ export const ekit = {
          * @param res 
          */
         getAll:async (req: Request, res: Response) => {    
-            
-            console.log("req.body",req.body);
-            console.log("req.params.lang",req.params.lang);
-            
             // LOAD PROJETS DE L'UTILISATEUR
             if (req.body.projectUID && req.body.tableUID && req.body.coordinates) {
                 //LOAD PROPRIETES
@@ -23,10 +19,14 @@ export const ekit = {
                     // GET ALL ENUMS ids AND CATEGORIES TABLES IDs TO LOAD THEM
                     const enumsTablesIds = properties.filter(item => (item.body.ptype === "5912f82d4c3181110079e0a6"));
                     // LOAD CATEGORIES LINES VIA config.categid
-                    const categoriesLines = await mongo.objects.getAll(req.body.projectUID, enumsTablesIds.map(item => { return item.config.categid }), req.params.lang);
-                    res.json({ result:properties,categoriesLines:categoriesLines });
+                    const categoriesLines = await mongo.objects.getAll(req.body.projectUID, enumsTablesIds.map(item => { return item.config?.categid }), req.params.lang);
+                    // LOAD LINKED PROTOTYPES TO GET title Col
+                    let categoriesPrototypesTitles = [];
+                    if (enumsTablesIds.length>0) {
+                        categoriesPrototypesTitles = await mongo.properties.getTitleColumnsIds(req.body.projectUID, enumsTablesIds.map(item => { return item.config?.categid }), req.params.lang);
+                    }
+                    res.json({ result:properties,categoriesLines:categoriesLines,categoriesPrototypesTitles:categoriesPrototypesTitles });
                 }
-                
                 //LOAD OBJETS
                 else {
                     //CORDINATE !== 
@@ -34,10 +34,14 @@ export const ekit = {
                     res.json({ result:datas });
                 }
             }
+            //LOAD PROJECT
+            else if (req.body.projectUID) {
+                const tables = await mongo.tables.getAll(req.body.projectUID, req.params.lang);
+                res.json({ result:tables });
+            }
             //LOAD USER PROJECTS
-            else if (req.body.projectsUIDs) {
+            else {
                 const projects = await mongo.projects.getAll(req.decoded._id, req.params.lang);
-                console.log(projects);
                 const mapedProjects = projects.map(item => ({
                     _id: item._id.toString(),
                     langs:item.langs,
@@ -45,27 +49,44 @@ export const ekit = {
                     dateCreation: item.dateCreation
                 }));
                 res.json({ result:mapedProjects });
+                
             }
-            //LOAD PROJECT
-            else if (req.body.projectUID) {
-                const tables = await mongo.tables.getAll(req.body.projectUID, req.params.lang);
-                res.json({ result:tables });
-            }
-
         },
         save:async (req: Request, res: Response) => { 
+            let obj = {};
             switch (req.params.repo) {
                 case "projects":
-                    await mongo.projects.save(req.decoded._id,req.body, req.params.lang);
+                    obj = await mongo.projects.save(req.decoded._id,req.body, req.params.lang);
                     break;
                 case "prototypes":
-                    await mongo.tables.save(req.decoded._id,req.body, req.params.lang);
+                    obj = await mongo.tables.save(req.decoded._id,req.body, req.params.lang);
                     break;
                 case "properties":
-                    await mongo.properties.save(req.decoded._id,req.body, req.params.lang);
+                    obj = await mongo.properties.save(req.decoded._id,req.body, req.params.lang);
+                    break;
+                case "objects":
+                    obj = await mongo.objects.save(req.decoded._id,req.body, req.params.lang);
                     break;
             } 
-            res.json({ ok:true });
+            res.json({ ok:obj });
+        },
+        delete:async (req: Request, res: Response) => { 
+            let obj = {};
+            switch (req.params.repo) {
+                case "projects":
+                    //obj = await mongo.projects.delete(req.decoded._id,req.body, req.params.lang);
+                    break;
+                case "prototypes":
+                    //obj = await mongo.tables.save(req.decoded._id,req.body, req.params.lang);
+                    break;
+                case "properties":
+                    //obj = await mongo.properties.save(req.decoded._id,req.body, req.params.lang);
+                    break;
+                case "objects":
+                    await mongo.objects.delete(req.params.uid);
+                    break;
+            } 
+            res.json({ ok:obj });
         },
         get:async (req: Request, res: Response) => {  
             let obj = {};
@@ -76,8 +97,16 @@ export const ekit = {
                 case "prototypes":
                     obj = await mongo.generic.get(req.params.uid,mongo.tables.collection,req.params.lang);
                     break;
-            }   
+                case "properties":
+                    obj = await mongo.generic.get(req.params.uid,mongo.properties.collection,req.params.lang);
+                    break;
+                case "objects":
+                    obj = await mongo.generic.get(req.params.uid,mongo.objects.collection,req.params.lang);
+                    break;
+                    
+            }
             res.json({ result:obj });
+
         }  
     }
 }
