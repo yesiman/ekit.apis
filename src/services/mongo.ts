@@ -28,92 +28,12 @@ export const mongo = {
             return await collection.updateOne({_id:new ObjectId(uid)},{$set:objectLang});
         },
         get:async (uid:string, collection:Collection, lang:string) => {
-            /*var aggParams = [];
-            aggParams.push({$lookup: {
-                from: "objects_langs",
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                as: "body",
-            }});
-            aggParams.push({ "$unwind": "$body" });
-            aggParams.push({ "$match": 
-                {
-                    _id:new ObjectId(uid),
-                    "body.lang":lang
-                } 
-            });     
-            const ar = await collection.aggregate(aggParams).toArray();
-            return ar[0];*/
-
             const recs = await mongo.generic.getAll({
                 _id:new ObjectId(uid)
             },collection,lang);
             return recs[0];
-
-            let aggParams = [];
-            aggParams.push({ "$match": 
-            {
-                
-            }});
-            aggParams.push({$lookup: {
-                from: "objects_langs",
-                let: {
-                    id: "$_id",
-                    reqLang: lang,
-                    defLang: "fr"
-                },
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                pipeline: [
-                    {
-                    $match: {
-                        $expr: {
-                        $and: [
-                            // ⚠️ adapte selon le type de objects_langs.objectid
-                            // Si c'est un ObjectId :
-                            { $eq: ["$objectid", "$$id"] },
-                            // Si c'est une string :
-                            // { $eq: ["$objectid", { $toString: "$$id" }] },
-
-                            { $in: ["$lang", ["$$reqLang", "$$defLang"]] }
-                        ]
-                        }
-                    }
-                    },
-                    // Prioriser la langue demandée si dispo, sinon la langue par défaut
-                    {
-                    $addFields: {
-                        _pref: {
-                        $cond: [{ $eq: ["$lang", "$$reqLang"] }, 0, 1]
-                        }
-                    }
-                    },
-                    { $sort: { _pref: 1 } },
-                    { $limit: 1 },
-                    { $project: { _pref: 0 } }
-                ],
-                as: "body",
-            }});
-            aggParams.push({ "$unwind": "$body" });
-
-            console.log("aggParams",aggParams);
-               
-            const ar = await collection.aggregate(aggParams).toArray();
-            // LANGUAGE OVERWRITE (CLIENT ASK)
-            //if ( ar[0].body.lang != lang) {
-            //    ar[0].body.lang = lang;
-            //    ar[0]._id = -1;
-            //}
-            return ar[0];
-
         },
-
         getAll: async (filters:any,collection:Collection, lang:string) => {
-
-            //aggParamsTest.push({ "$group": { _id : "$objectid" } });
-            //aggParams.push({ $count: "counter" });
-            
-            console.log("lang",lang);
 
             let aggParamsBase = [];
 
@@ -167,7 +87,64 @@ export const mongo = {
 
             return await collection.aggregate(aggParamsQuery).toArray();
             
+        },
+        save:async (header:any,body:any,lang:string,collection:Collection) => {
+            
+            if (header._id == "-1") {
+                delete header._id;
+                const q = await mongo.generic.add(header,collection);
+                // IF INPUT LANGUAGE != DEFAULT LANGUAGE
+                if ("fr" != lang) {
+                    // CHECK IF DEFAULT VERSION EXIST
+                    //const version = await mongo.objectsLangs.versionExist(object._id,"fr");
+                    //if (!version) {
+                        // DEFAULT LANGUAGE VERSION CREATION
+                        await mongo.generic.add({
+                                lang:"fr",
+                                objectid: new ObjectId(q.insertedId),
+                                ...body
+                            },mongo.objectsLangs.collection);    
+                    //}
+                }
+                //
+                await mongo.generic.add({
+                        lang:lang,
+                        objectid: new ObjectId(q.insertedId),
+                        ...body
+                    },mongo.objectsLangs.collection);
+
+                return q.insertedId;
+
+            } else {      
+                // HEADER UPDATE          
+                const e=await mongo.generic.append(header._id,
+                    header
+                ,collection);
+                // A METTRE DANS DU GENERIQUE
+                // GET OBJECT DANS LA LANGUE // ADD OR APPEND
+                // INTEGRAGATE DANS UN APPEND objectLangs
+                // SI ON A PAS DE VERSION PAR DEFAUT ON LA CREE SUR LA LANGUE ENVOYEE
+
+                // CHECK IF CURRENT INPUT VERSINO EXIST
+                const version = await mongo.objectsLangs.versionExist(header._id,lang);
+                if (version) {
+                    // IF EXIST UPDATE
+                    const r = await mongo.generic.append(body._id,body,mongo.objectsLangs.collection);
+                }
+                else {
+                    // CREATE NEW VERSION
+                    delete body.objectid;
+                    delete body._id;
+                    body.lang = lang;
+                    await mongo.generic.add({
+                        objectid: new ObjectId(header._id as string),
+                        ...body
+                    },mongo.objectsLangs.collection);
+                }
+                return header._id;
+            }
         }
+
     },
     objectsLangs:{
         collection: mongoDB.collection('objects_langs'),
@@ -193,15 +170,25 @@ export const mongo = {
         save: async (userId:string, project:any, lang:string) => { 
             //LOADER LE PROJET
             
+            return await mongo.generic.save({
+                    _id:project._id,
+                    langs:project.langs,
+                    dateModif:new Date(),
+                    defaultLang:project.defaultLang,
+                    dateCreation:new Date(),
+                    owner: new ObjectId(userId),
+                },project.body,lang,mongo.projects.collection)
+
+
             //console.log("project saved",project);
             //SINON
-            let promises;
-            let projectUID:string = project._id;
+            console.log("project in",project);
             //SIL EXISTE PAS ALORS CREATION
             if (project._id == "-1") {
                 const q = await mongo.generic.add({
                     langs:project.langs,
                     dateModif:new Date(),
+                    defaultLang:project.defaultLang,
                     dateCreation:new Date(),
                     owner: new ObjectId(userId),
                 },mongo.projects.collection);
@@ -218,13 +205,13 @@ export const mongo = {
             } else {
                 await mongo.generic.append(project._id,{
                     langs:project.langs,
+                    defaultLang:project.defaultLang,
                     dateModif:new Date(),
                 },mongo.projects.collection);
                 const r = await mongo.generic.append(project.body._id,project.body,mongo.objectsLangs.collection);
             }
-        
 
-            
+        
             //user = {
             //    _id:result.insertedId
             //};
@@ -273,6 +260,18 @@ export const mongo = {
             },mongo.tables.collection,lang);
         },
         save: async (userId:string, table:any, lang:string) => { 
+
+            return await mongo.generic.save({
+                    _id:table._id,
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    projects:table.projects,
+                    public:true,
+                    categ: false,
+                    hierar: false,
+                    owner: new ObjectId(userId),
+                },table.body,lang,mongo.tables.collection)
+
             if (table._id == "-1") {
                 
                 const q = await mongo.generic.add({
@@ -335,13 +334,9 @@ export const mongo = {
             const projProfs = tableUIDs.map((item:string) => {
                 return projectUID + item;
             });
-
             return await mongo.generic.getAll({
                 _projprof:{$in:projProfs}
             },mongo.properties.collection,lang);
-
-
-            
         },
         /**
          * 
@@ -351,6 +346,17 @@ export const mongo = {
          * @returns 
          */
         save: async (userId:string, field:any, lang:string) => { 
+            
+                return await mongo.generic.save({
+                    _id:field._id,
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    _projprof:field._projprof,
+                    specifics:field.specifics,
+                    multiling:field.multiling,
+                    owner: new ObjectId(userId),
+                },field.body,lang,mongo.properties.collection)
+
             if (field._id == "-1") {
                 const q = await mongo.generic.add({
                     dateModif:new Date(),
@@ -382,6 +388,16 @@ export const mongo = {
             await mongo.generic.delete(objectId,mongo.objects.collection);
         },
         save: async (userId:string, object:any, lang:string) => { 
+
+            return await mongo.generic.save({
+                    _id:object._id,
+                    dateModif:new Date(),
+                    dateCreation:new Date(),
+                    projects:object.projects.map((item:string) => { return new ObjectId(item) }),
+                    proto:object.proto.map((item:string) => { return new ObjectId(item) }),
+                    owner: new ObjectId(userId),
+                },object.body,lang,mongo.objects.collection)
+
             if (object._id == "-1") {
                 const q = await mongo.generic.add({
                     dateModif:new Date(),
@@ -390,6 +406,19 @@ export const mongo = {
                     proto:object.proto.map((item:string) => { return new ObjectId(item) }),
                     owner: new ObjectId(userId),
                 },mongo.objects.collection);
+                // IF INPUT LANGUAGE != DEFAULT LANGUAGE
+                if ("fr" != lang) {
+                    // CHECK IF DEFAULT VERSION EXIST
+                    //const version = await mongo.objectsLangs.versionExist(object._id,"fr");
+                    //if (!version) {
+                        // DEFAULT LANGUAGE VERSION CREATION
+                        await mongo.generic.add({
+                                lang:"fr",
+                                objectid: new ObjectId(q.insertedId),
+                                ...object.body
+                            },mongo.objectsLangs.collection);    
+                    //}
+                }
                 //
                 await mongo.generic.add({
                         lang:lang,
@@ -399,21 +428,26 @@ export const mongo = {
 
                 return q.insertedId;
 
-            } else {                
+            } else {      
+                // HEADER UPDATE          
                 await mongo.generic.append(object._id,{
                     dateModif:new Date(),
                 },mongo.objects.collection);
                 
+
                 // A METTRE DANS DU GENERIQUE
                 // GET OBJECT DANS LA LANGUE // ADD OR APPEND
                 // INTEGRAGATE DANS UN APPEND objectLangs
                 // SI ON A PAS DE VERSION PAR DEFAUT ON LA CREE SUR LA LANGUE ENVOYEE
 
+                // CHECK IF CURRENT INPUT VERSINO EXIST
                 const version = await mongo.objectsLangs.versionExist(object._id,lang);
                 if (version) {
+                    // IF EXIST UPDATE
                     const r = await mongo.generic.append(object.body._id,object.body,mongo.objectsLangs.collection);
                 }
                 else {
+                    // CREATE NEW VERSION
                     delete object.body.objectid;
                     delete object.body._id;
                     object.body.lang = lang;
@@ -436,5 +470,4 @@ export const mongo = {
             },mongo.objects.collection,lang);
         }
     },
-    
 }

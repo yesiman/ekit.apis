@@ -45,9 +45,11 @@ export const ekit = {
                 const mapedProjects = projects.map(item => ({
                     _id: item._id.toString(),
                     langs:item.langs,
+                    defaultLang:item.defaultLang,
                     name: item.body?.plib,
                     dateCreation: item.dateCreation
                 }));
+                
                 res.json({ result:mapedProjects });
                 
             }
@@ -103,7 +105,7 @@ export const ekit = {
                 case "objects":
                     obj = await mongo.generic.get(req.params.uid,mongo.objects.collection,req.params.lang);
                     break;
-                    
+
             }
             res.json({ result:obj });
 
