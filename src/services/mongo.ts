@@ -45,10 +45,15 @@ export const mongo = {
             const ar = await collection.aggregate(aggParams).toArray();
             return ar[0];*/
 
+            const recs = await mongo.generic.getAll({
+                _id:new ObjectId(uid)
+            },collection,lang);
+            return recs[0];
+
             let aggParams = [];
             aggParams.push({ "$match": 
             {
-                _id:new ObjectId(uid)
+                
             }});
             aggParams.push({$lookup: {
                 from: "objects_langs",
@@ -102,6 +107,67 @@ export const mongo = {
             return ar[0];
 
         },
+
+        getAll: async (filters:any,collection:Collection, lang:string) => {
+
+            //aggParamsTest.push({ "$group": { _id : "$objectid" } });
+            //aggParams.push({ $count: "counter" });
+            
+            console.log("lang",lang);
+
+            let aggParamsBase = [];
+
+            aggParamsBase.push({ "$match": filters});
+
+            aggParamsBase.push({$lookup: {
+                from: "objects_langs",
+                let: {
+                    id: "$_id",
+                    reqLang: lang,
+                    defLang: "fr"
+                },
+                localField: "_id",    // field in the orders collection
+                foreignField: "objectid",
+                pipeline: [
+                    {
+                    $match: {
+                        $expr: {
+                        $and: [
+                            // ⚠️ adapte selon le type de objects_langs.objectid
+                            // Si c'est un ObjectId :
+                            { $eq: ["$objectid", "$$id"] },
+                            // Si c'est une string :
+                            // { $eq: ["$objectid", { $toString: "$$id" }] },
+
+                            { $in: ["$lang", ["$$reqLang", "$$defLang"]] }
+                        ]
+                        }
+                    }
+                    },
+                    // Prioriser la langue demandée si dispo, sinon la langue par défaut
+                    {
+                    $addFields: {
+                        _pref: {
+                        $cond: [{ $eq: ["$lang", "$$reqLang"] }, 0, 1]
+                        }
+                    }
+                    },
+                    { $sort: { _pref: 1 } },
+                    { $limit: 1 },
+                    { $project: { _pref: 0 } }
+                ],
+                as: "body",
+            }});
+            aggParamsBase.push({ "$unwind": "$body" });
+            let aggParamsQuery=[...aggParamsBase,{"$limit":25}];
+
+            //let aggParamsCount=[...aggParamsBase,{ "$count": "counter" }];
+
+            //console.log("Line counter total",await mongo.objects.collection.aggregate(aggParamsCount).toArray());
+
+            return await collection.aggregate(aggParamsQuery).toArray();
+            
+        }
     },
     objectsLangs:{
         collection: mongoDB.collection('objects_langs'),
@@ -185,26 +251,13 @@ export const mongo = {
             //On TRANSFORME LES id en string en ObjectID
             //const networksIds = ids.map((item:string) => 
             //    new ObjectId(item));
-
-            var aggParams = [];
-            aggParams.push({$lookup: {
-                from: "objects_langs",
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                as: "body",
-            }});
-            aggParams.push({ "$unwind": "$body" });
-            aggParams.push({ "$match": 
-            {
+            return await mongo.generic.getAll({
                 $or:[
                     {owner:new ObjectId(userId)},
                     {collaborators:{$in:[userId]}}
-                ],
-                "body.lang":lang
-            } 
-            });     
-            const projects = await mongo.projects.collection.aggregate(aggParams).toArray();
-            return projects;
+                ]
+            },mongo.projects.collection,lang);
+
         },
         delete() {
 
@@ -214,22 +267,10 @@ export const mongo = {
         collection: mongoDB.collection('prototypes'),
         // LOAD DES PROJETS DEMANDES (UIDs)
         getAll: async (id:string, lang:string) => {
-            var aggParams = [];
-            aggParams.push({$lookup: {
-                from: "objects_langs",
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                as: "body",
-            }});
-            aggParams.push({ "$unwind": "$body" });
-            aggParams.push({ "$match": 
-            {
-                projects:{$in:[new ObjectId(id),id]},
-                "body.lang":lang
-            } 
-            });     
             
-            return mongo.tables.collection.aggregate(aggParams).toArray();
+            return await mongo.generic.getAll({
+                projects:{$in:[new ObjectId(id),id]},
+            },mongo.tables.collection,lang);
         },
         save: async (userId:string, table:any, lang:string) => { 
             if (table._id == "-1") {
@@ -291,56 +332,16 @@ export const mongo = {
          * LOAD DES PROPRIETES DEMANDES (UIDs/PROFIL/PROJET)
          *  */ 
         getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {
-            let aggParams = [];
             const projProfs = tableUIDs.map((item:string) => {
                 return projectUID + item;
             });
-            aggParams.push({ "$match": 
-            {
-                _projprof:{$in:projProfs}
-            }});
-            aggParams.push({$lookup: {
-                from: "objects_langs",
-                let: {
-                    id: "$_id",
-                    reqLang: lang,
-                    defLang: "fr"
-                },
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                pipeline: [
-                    {
-                    $match: {
-                        $expr: {
-                        $and: [
-                            // ⚠️ adapte selon le type de objects_langs.objectid
-                            // Si c'est un ObjectId :
-                            { $eq: ["$objectid", "$$id"] },
-                            // Si c'est une string :
-                            // { $eq: ["$objectid", { $toString: "$$id" }] },
 
-                            { $in: ["$lang", ["$$reqLang", "$$defLang"]] }
-                        ]
-                        }
-                    }
-                    },
-                    // Prioriser la langue demandée si dispo, sinon la langue par défaut
-                    {
-                    $addFields: {
-                        _pref: {
-                        $cond: [{ $eq: ["$lang", "$$reqLang"] }, 0, 1]
-                        }
-                    }
-                    },
-                    { $sort: { _pref: 1 } },
-                    { $limit: 1 },
-                    { $project: { _pref: 0 } }
-                ],
-                as: "body",
-            }});
-            aggParams.push({ "$unwind": "$body" });
-               
-            return mongo.properties.collection.aggregate(aggParams).toArray();
+            return await mongo.generic.getAll({
+                _projprof:{$in:projProfs}
+            },mongo.properties.collection,lang);
+
+
+            
         },
         /**
          * 
@@ -403,8 +404,11 @@ export const mongo = {
                     dateModif:new Date(),
                 },mongo.objects.collection);
                 
+                // A METTRE DANS DU GENERIQUE
                 // GET OBJECT DANS LA LANGUE // ADD OR APPEND
                 // INTEGRAGATE DANS UN APPEND objectLangs
+                // SI ON A PAS DE VERSION PAR DEFAUT ON LA CREE SUR LA LANGUE ENVOYEE
+
                 const version = await mongo.objectsLangs.versionExist(object._id,lang);
                 if (version) {
                     const r = await mongo.generic.append(object.body._id,object.body,mongo.objectsLangs.collection);
@@ -425,101 +429,11 @@ export const mongo = {
             
         },
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {
-
-            //aggParamsTest.push({ "$group": { _id : "$objectid" } });
-            //aggParams.push({ $count: "counter" });
-            
-            console.log("lang",lang);
-
-            let aggParamsBase = [];
-
-            aggParamsBase.push({ "$match": 
-            {
+        getAll: async (projectUID:string,tableUIDs:string[], lang:string) => {            
+            return await mongo.generic.getAll({
                 projects:{$in:[new ObjectId(projectUID)]},
                 proto:{$in:tableUIDs.map(item => {return new ObjectId(item)})}
-            }});
-
-            aggParamsBase.push({$lookup: {
-                from: "objects_langs",
-                let: {
-                    id: "$_id",
-                    reqLang: lang,
-                    defLang: "fr"
-                },
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                pipeline: [
-                    {
-                    $match: {
-                        $expr: {
-                        $and: [
-                            // ⚠️ adapte selon le type de objects_langs.objectid
-                            // Si c'est un ObjectId :
-                            { $eq: ["$objectid", "$$id"] },
-                            // Si c'est une string :
-                            // { $eq: ["$objectid", { $toString: "$$id" }] },
-
-                            { $in: ["$lang", ["$$reqLang", "$$defLang"]] }
-                        ]
-                        }
-                    }
-                    },
-                    // Prioriser la langue demandée si dispo, sinon la langue par défaut
-                    {
-                    $addFields: {
-                        _pref: {
-                        $cond: [{ $eq: ["$lang", "$$reqLang"] }, 0, 1]
-                        }
-                    }
-                    },
-                    { $sort: { _pref: 1 } },
-                    { $limit: 1 },
-                    { $project: { _pref: 0 } }
-                ],
-                as: "body",
-            }});
-            aggParamsBase.push({ "$unwind": "$body" });
-            let aggParamsQuery=[...aggParamsBase,{"$limit":25}];
-
-            let aggParamsCount=[...aggParamsBase,{ "$count": "counter" }];
-
-            console.log("Line counter total",await mongo.objects.collection.aggregate(aggParamsCount).toArray());
-
-            return await mongo.objects.collection.aggregate(aggParamsQuery).toArray();
-            
-            
-            /*
-            aggParamsBase.push({$lookup: {
-                from: "objects_langs",
-                localField: "_id",    // field in the orders collection
-                foreignField: "objectid",
-                as: "body",
-            }});
-            aggParamsBase.push({ "$unwind": "$body" });
-            aggParamsBase.push({ "$match": 
-            {
-                
-                "body.lang":lang
-            } 
-            });*/
-            //aggParams.push({ "$group": { _id : "$proto", myCount: { $sum: 1 } } });
-
-            //let aggParamsQuery=[...aggParamsBase,{"$limit":25}];
-
-            
-
-            //let aggParamsCount=[...aggParamsBase,{ "$count": "counter" }];
-
-            
-            //console.log("Line counter total",await mongo.objects.collection.aggregate(aggParamsCount).toArray());
-
-            //console.log("aggParamsQuery", aggParamsQuery);
-            //console.log("aggParamsCount", aggParamsCount);
-
-
-            //console.log(await mongo.objects.collection.aggregate(aggParamsCount).toArray());
-            //return await mongo.objects.collection.aggregate(aggParamsQuery).toArray();
+            },mongo.objects.collection,lang);
         }
     },
     
