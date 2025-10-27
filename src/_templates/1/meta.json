@@ -1,0 +1,12 @@
+{
+  "name": "1",
+  "version": 1,
+  "entry": "template.hbs",
+  "layout": "layout.hbs",
+  "partials": [
+    "partials/card.hbs"
+  ],
+  "assets": [
+    "assets/css/main.css"
+  ]
+}

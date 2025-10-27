@@ -2,10 +2,17 @@ import { Router } from "express";
 import { middle } from "../middles/jwt";
 import { auth } from "../controllers/auth";
 import { ekit } from "../controllers/ekit";
+import { templateRenderer } from "../controllers/templates/render";
+import { templateFileManager } from "../controllers/templates/files-manager";
 
 const router = Router();
 
-// AUTH
+/**
+ * 
+ * AUTH ROUTES
+ * 
+ */
+/**
 /**
  * @openapi
  * /api/auth/custom:
@@ -43,11 +50,39 @@ router.post('/auth/custom/login', auth.custom.log);
  *         description: Return user data and token for new or exsting gauth user
  */
 router.post('/auth/google',auth.google.log);
+
+/** TEMPLATING RENDERING ROUTES
+ * 
+ * 
+ * 
+ */
+router.get("/templates/render/:templateId", templateRenderer.render);
+//router.get('/templates/files', templateRenderer.create);
+//router.post('/templates/files', templateRenderer.create);
+//router.put('/templates/files', templateRenderer.create);
+//router.delete('/templates/files', templateRenderer.create);
+
 // MIDDLE TOKEN VERIFICATION
 router.use(middle.checkTokenValidity);
 // MIDDLE USER RULE VERIFICATION (READ/WRITE...)
 router.use(middle.checkUserAccess);
-// GENERIC DATA METHOD
+
+/** TEMPLATING ROUTES
+ * 
+ * 
+ * 
+ */
+router.get('/templates/create', templateRenderer.create);
+//
+router.get('/templates/tree', templateFileManager.getTree);
+//
+router.post('/templates/file', templateFileManager.getFile);
+router.put('/templates/file', templateFileManager.updateFile);
+/** EKIT ROUTES
+ * 
+ * 
+ * 
+ */
 /**
  * @openapi
  * /api/datas/get:
@@ -92,7 +127,6 @@ router.post('/datas/:lang', ekit.generic.getAll);
  *              type: string
  *              example: xxxxxxxxxxxxxxxx (GUID mongoID)
  */
-
 router.get('/:repo/:lang/:uid', ekit.generic.get);
 router.post('/:repo/:lang', ekit.generic.save);
 router.put('/:repo/:lang/:uid', ekit.generic.save);

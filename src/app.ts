@@ -5,11 +5,25 @@ import cors from 'cors';
 import router from './routes/index'
 import { errorHandler } from './middles/error';
 import { setupSwagger } from './config/swagger';
+import { setupHandleBars } from './config/handlebars';
 
 export function createApp() {
     const app = express();
     // HEADER SECURITY INJECTION
-    app.use(helmet());
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          useDefaults: true,
+          directives: {
+            // ajoute le 4200
+            "frame-ancestors": ["'self'", "http://localhost:4200"],
+          },
+        },
+        // si tu avais un X-Frame-Options, désactive-le (obsolète et conflit)
+        frameguard: false,
+      })
+    );
+    
     const allowedOrigins = [
       'http://localhost:4200',
       'http://app.ekit.ekoal.org'
@@ -23,6 +37,7 @@ export function createApp() {
     app.use(morgan('dev'));
     //
     setupSwagger(app);
+    setupHandleBars(app);
     //
     app.use('/api',router);
     //
