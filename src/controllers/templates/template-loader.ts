@@ -9,7 +9,7 @@ export type TemplateSpec = {
 };
 
 export async function loadTemplateById(templateId: string): Promise<TemplateSpec> {
-  const file = path.join(process.cwd(), "src","_templates/2", `template.hbs`);
+  const file = path.join(process.cwd(), "src","_templates/"+templateId, `template.hbs`);
 
   const raw = await fs.readFile(file, "utf8");
   const parsed = fm<any>(raw);

@@ -7,8 +7,14 @@ import fs from "fs/promises"; import path from "path";
 
 export const templateFileManager = {
     getTree:async (req: Request, res: Response) => {    
-        const tree = await readDirectoryTree(env.TEMPLATES_LOCATION+"/2/")
-        res.json({ tree:tree });
+        try{
+            const tree = await readDirectoryTree(env.TEMPLATES_LOCATION+`/${req.params.templateUID}/`)
+            res.json({ tree:tree });
+        }
+        catch {
+            res.status(404).json({ tree:[] })
+        }
+        
     },
     getFile:async (req: Request, res: Response) => {    
         //const relPath = (req.query.path || "").toString();
@@ -18,7 +24,7 @@ export const templateFileManager = {
 
             //const fullPath = safeJoin(BASE_DIR, relPath);
             // Vérif existence + type
-            let fullPath = env.TEMPLATES_LOCATION + "/2/"+req.body.path;
+            let fullPath = env.TEMPLATES_LOCATION + `/${req.params.templateUID}/`+req.body.path;
             const stat = await fs.stat(fullPath);
             if (!stat.isFile()) return res.status(400).json({ error: "Not a file" });
 
@@ -51,7 +57,7 @@ export const templateFileManager = {
             console.log("path",path);
             console.log("path",content);
 
-            let fullPath = env.TEMPLATES_LOCATION + "/2/"+path;
+            let fullPath = env.TEMPLATES_LOCATION + `/${req.params.templateUID}/`+path;
             //const abs = safeJoin(BASE_DIR, rel);
             console.log("fullPath",fullPath);
             //const ext = path.extname(fullPath).toLowerCase();

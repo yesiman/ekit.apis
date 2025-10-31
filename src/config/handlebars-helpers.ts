@@ -15,3 +15,9 @@ Handlebars.registerHelper("or", (a: any, b: any) => a || b);
 Handlebars.registerHelper("list", function(items: any[], options: any) {
   return (items || []).map(item => options.fn(item)).join("");
 });
+
+Handlebars.registerHelper("asset", (relPath, opts) => {
+  console.log("opts.data.root._site",opts.data.root._site);
+  const site = opts.data.root._site;
+  return `/api/templates/render/static/${encodeURIComponent(site)}/${relPath}`;
+});

@@ -1,6 +1,6 @@
 // src/rendering/data-loader.ts
 import Handlebars from "handlebars";
-import type { Db, Document, SortDirection } from "mongodb";
+import type { Collection, Db, Document, SortDirection } from "mongodb";
 import { mongo } from "./mongo";
 
 /* =========================
@@ -194,7 +194,24 @@ export async function buildViewModel(
     if (hydrated.single) {
       model[key] = await coll.findOne(safeFilter as Record<string, unknown>, { sort: safeSort as Record<string, SortDirection> });
     } else {
-        model[key] = await mongo.generic.getAll(safeFilter,mongo.projects.collection,"fr")
+      console.log(hydrated.collection);
+        let mongoCollection:Collection;
+        switch (hydrated.collection) {
+          case "projects":
+            //console.log(key,await mongo.generic.getAll(safeFilter,mongo.projects.collection,"fr");
+            
+            model[key] = await mongo.generic.getAll(safeFilter,mongo.projects.collection,"fr")
+            break;
+          case "prototypes":
+            //console.log(key,await mongo.generic.getAll(safeFilter,mongo.tables.collection,"fr");
+            model[key] = await mongo.generic.getAll(safeFilter,mongo.tables.collection,"fr")
+            break;
+          case "objects":
+            model[key] = await mongo.generic.getAll(safeFilter,mongo.objects.collection,"fr")
+            break;
+        }
+        
+        
       //model[key] = await coll.find(safeFilter as Record<string, unknown>)
       //  .sort(safeSort as Record<string, SortDirection>)
       //  .limit(limit)
@@ -207,6 +224,8 @@ export async function buildViewModel(
     params,
     generatedAt: new Date().toISOString(),
   };
+
+  console.log("model",model);
 
   return model;
 }

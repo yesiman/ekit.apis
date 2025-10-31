@@ -23,7 +23,7 @@ export function createApp() {
         frameguard: false,
       })
     );
-    
+
     const allowedOrigins = [
       'http://localhost:4200',
       'http://app.ekit.ekoal.org'
@@ -33,6 +33,20 @@ export function createApp() {
     };
     // CALLERS DOMAIN ORIGINS LIMITATION
     app.use(cors(corsOptions));
+    
+    // JSON
+    app.use(express.json({ limit: '25mb' }));        // ajuste à ton besoin
+
+    // x-www-form-urlencoded (form classique)
+    app.use(express.urlencoded({ limit: '25mb', extended: true }));
+
+    // Si tu envoies du texte brut
+    app.use(express.text({ limit: '25mb', type: 'text/*' }));
+
+    // Si tu reçois du binaire (raw)
+    app.use(express.raw({ limit: '50mb', type: 'application/octet-stream' }));
+
+
     app.use(express.json());
     app.use(morgan('dev'));
     //

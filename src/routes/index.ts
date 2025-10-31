@@ -56,7 +56,10 @@ router.post('/auth/google',auth.google.log);
  * 
  * 
  */
-router.get("/templates/render/:templateId", templateRenderer.render);
+router.get("/templates/render/:templateUID", templateRenderer.render);
+
+router.get('/templates/render/static/:templateUID/*', templateRenderer.renderStatic);
+  
 //router.get('/templates/files', templateRenderer.create);
 //router.post('/templates/files', templateRenderer.create);
 //router.put('/templates/files', templateRenderer.create);
@@ -74,10 +77,10 @@ router.use(middle.checkUserAccess);
  */
 router.get('/templates/create', templateRenderer.create);
 //
-router.get('/templates/tree', templateFileManager.getTree);
+router.get('/templates/tree/:templateUID', templateFileManager.getTree);
 //
-router.post('/templates/file', templateFileManager.getFile);
-router.put('/templates/file', templateFileManager.updateFile);
+router.post('/templates/file/:templateUID', templateFileManager.getFile);
+router.put('/templates/file/:templateUID', templateFileManager.updateFile);
 /** EKIT ROUTES
  * 
  * 

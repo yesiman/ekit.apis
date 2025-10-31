@@ -255,10 +255,11 @@ export const mongo = {
     tables: {
         collection: mongoDB.collection('prototypes'),
         // LOAD DES PROJETS DEMANDES (UIDs)
-        getAll: async (id:string, lang:string) => {
+        getAll: async (id:string, type:string, lang:string) => {
             
             return await mongo.generic.getAll({
-                projects:{$in:[new ObjectId(id),id]},
+                projects:{$in:[new ObjectId(id),id]},              
+                type:type
             },mongo.tables.collection,lang);
         },
         save: async (userId:string, table:any, lang:string) => { 
@@ -268,6 +269,7 @@ export const mongo = {
                     dateModif:new Date(),
                     dateCreation:new Date(),
                     projects:table.projects,
+                    type:table.type,
                     public:true,
                     categ: false,
                     hierar: false,

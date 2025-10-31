@@ -1,0 +1,34 @@
+
+header, main, footer {
+  padding-block: 0 !important; /* supprime le padding haut/bas */
+}
+
+header .top-header {
+  width: 100%; 
+  padding-left: 40px; 
+  padding-right: 40px; 
+  padding-top: 8px; 
+  padding-bottom: 8px; 
+  background: white; 
+  overflow: hidden; 
+  outline: 1px white solid; 
+  outline-offset: -1px; 
+  justify-content: center; 
+  align-items: flex-start; 
+  gap: 10px; 
+  display: inline-flex;
+}
+header .top-header .logo {
+  width: 148.08px; 
+  height: 32px; 
+  position:relative;
+}
+header .top-header .nav {
+}
+header .top-header .nav .menu-item {
+}
+
+header .top-search-bar {
+  width: 100%; 
+  padding-left: 40px; padding-right: 40px; background: var(--Vert-clair, #F1F5F3); overflow: hidden; outline: 1px white solid; outline-offset: -1px; justify-content: space-between; align-items: center; display: inline-flex
+}
